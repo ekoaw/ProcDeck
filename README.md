@@ -179,3 +179,7 @@ Windows constraints behind the design:
 - Box characters must exist in CP437: only the sharp corners `┌┐└┘┬┴│─`.
 - Closing a console window kills every process attached to it, and killing
   only the supervisor leaves its instances running; hence the leftover cleanup.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
