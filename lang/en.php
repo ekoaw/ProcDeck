@@ -86,6 +86,7 @@ return [
     'send_failed' => 'Could not send the command to the supervisor ({file}).',
     'exit_message' => "Exiting. The instances keep running in the '{window}' window.",
     'exit_message_down' => 'Exiting. The supervisor is not running, so no instances are running.',
+    'exit_message_died' => 'Exiting. The supervisor died unexpectedly: its old instances are still running unwatched. Open the menu again: they are stopped first.',
     'script_not_found' => "Script not found: {script}\nCheck 'script' in {ini}",
 
     // Instance table ([9]).

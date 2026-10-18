@@ -708,9 +708,12 @@ while (true) {
             show_all();
             break;
         case '0':
-            echo (procdeck_supervisor_running()
-                ? t('exit_message', ['window' => t('supervisor_window', ['env' => procdeck_environment_tag()])])
-                : t('exit_message_down')) . "\n";
+            // A supervisor that died leaves its instances running unwatched.
+            echo match (true) {
+                procdeck_supervisor_running() => t('exit_message', ['window' => t('supervisor_window', ['env' => procdeck_environment_tag()])]),
+                (procdeck_read_json(PROCDECK_STATE_FILE)['stopped'] ?? true) === false => t('exit_message_died'),
+                default => t('exit_message_down'),
+            } . "\n";
             exit(0);
         default:
             echo RED . t('unknown_choice') . RESET . "\n";

@@ -52,6 +52,7 @@ return [
     'send_failed' => 'Gagal mengirim perintah ke supervisor ({file}).',
     'exit_message' => "Keluar. Instance tetap berjalan di jendela '{window}'.",
     'exit_message_down' => 'Keluar. Supervisor tidak berjalan, jadi tidak ada instance yang berjalan.',
+    'exit_message_died' => 'Keluar. Supervisor mati tidak terduga: instance lama masih berjalan tanpa diawasi. Buka menu lagi: instance lama dihentikan otomatis.',
     'script_not_found' => "Script tidak ditemukan: {script}\nPeriksa 'script' di {ini}",
 
     'all_heading' => 'Semua instance',
