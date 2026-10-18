@@ -11,4 +11,8 @@ if ! "$php" -v >/dev/null 2>&1; then
     echo "Set the \"php =\" line in $dir/procdeck.ini to the location of php, for example /usr/bin/php"
     exit 1
 fi
-exec "$php" "$dir/manager.php"
+# The menu turns off line input and echo while it waits for a key; give them back
+# when Ctrl+C ends it in the middle of a wait.
+saved=$(stty -g 2>/dev/null)
+trap '[ -n "$saved" ] && stty "$saved"; exit 130' INT
+"$php" "$dir/manager.php"

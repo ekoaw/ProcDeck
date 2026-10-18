@@ -56,13 +56,42 @@ function read_choice(): string
 
         return ask('');
     }
+    $key = read_key('1234567890', REFRESH_S, '1');
+    echo "\n";
+
+    return $key;
+}
+
+/**
+ * choice.exe for a Linux terminal: the first key in $keys pressed within
+ * $seconds, or $default. Other keys are ignored, as choice.exe ignores them.
+ * Without a terminal (input from a pipe or a file) it reads a line instead.
+ */
+function read_key(string $keys, int $seconds, string $default): string
+{
     $read = [STDIN];
     $write = $except = null;
-    if (stream_select($read, $write, $except, REFRESH_S) === 0) {
-        return '1';
+    if (!stream_isatty(STDIN)) {
+        return stream_select($read, $write, $except, $seconds) > 0 ? ask('') : $default;
     }
+    // Key by key only while waiting: the prompts after it read whole lines.
+    shell_exec('stty -icanon -echo');
+    $key = $default;
+    $until = microtime(true) + $seconds;
+    while (($left = $until - microtime(true)) > 0) {
+        $read = [STDIN];
+        if (stream_select($read, $write, $except, (int) $left, (int) (fmod($left, 1) * 1_000_000)) === 0) {
+            break;
+        }
+        $pressed = strtoupper((string) fread(STDIN, 1));
+        if ($pressed !== '' && str_contains($keys, $pressed)) {
+            $key = $pressed;
+            break;
+        }
+    }
+    shell_exec('stty icanon echo');
 
-    return ask('');
+    return $key;
 }
 
 function confirm(string $question): bool
@@ -541,10 +570,8 @@ function back_pressed(): bool
 
         return ask('') === '0';
     }
-    $read = [STDIN];
-    $write = $except = null;
 
-    return stream_select($read, $write, $except, 1) > 0 && ask('') === '0';
+    return read_key('0', 1, '') === '0';
 }
 
 function instance_log(string $id): ?string

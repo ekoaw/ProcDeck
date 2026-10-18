@@ -20,7 +20,7 @@ Needs PHP 8.2 or later.
 1. Double-click `procdeck.bat`.
 2. Press `[2] Set number of instances`, type the number, then `y`.
 3. Done. The screen refreshes every 2 seconds. In the main menu press a number
-   key, no Enter needed (on Linux, press Enter after the key). When asked for a number (instance count, instance
+   key, no Enter needed. When asked for a number (instance count, instance
    number), leave it empty and press Enter to cancel.
 
 The main screen shows each instance in a box, numbered down then across
@@ -175,7 +175,8 @@ Windows constraints behind the design:
 - A running instance's log cannot be rotated or truncated, so the log cap is
   approximate.
 - PHP cannot read a key without blocking on a Windows console, so the menu
-  reads keys with `choice.exe`. Esc and Enter cannot be menu keys.
+  reads keys with `choice.exe`. Esc and Enter cannot be menu keys. On Linux
+  the menu does the same with `stty` (`read_key()` in `manager.php`).
 - Box characters must exist in CP437: only the sharp corners `┌┐└┘┬┴│─`.
 - Closing a console window kills every process attached to it, and killing
   only the supervisor leaves its instances running; hence the leftover cleanup.
