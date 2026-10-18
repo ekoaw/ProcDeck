@@ -5,7 +5,6 @@
 
 return [
     'supervisor_window' => '{name} Supervisor{env} - JANGAN DITUTUP',
-    'manager_heading' => '{name} - Pengelola Service',
 
     'status_restarting_in' => 'RESTARTING (dalam {seconds}s)',
     'legend_crash_loop' => 'crash loop (mati berulang, lihat log)',

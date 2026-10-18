@@ -9,7 +9,7 @@ return [
     // Window titles and headings. {env} is ` [STAGING]`, or empty.
     'manager_window' => '{name} Manager{env}',
     'supervisor_window' => '{name} Supervisor{env} - DO NOT CLOSE',
-    'manager_heading' => '{name} - Process Manager',
+    'manager_heading' => '{name}',
 
     // Status terms, also the letters' legend under the grid.
     'status_healthy' => 'HEALTHY',
