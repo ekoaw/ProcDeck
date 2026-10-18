@@ -4,7 +4,8 @@ Runs N copies of one PHP script (`php.exe service.php`) on a Windows server,
 restarts the ones that exit, and changes how many run, without opening a cmd
 window per copy. No service wrapper and no .exe: plain PHP scripts and a .bat
 an operator double-clicks. It also runs on Linux, which is how it is tested
-without a Windows machine.
+without a Windows machine: `procdeck.sh` is the Linux counterpart of
+`procdeck.bat`.
 
 Needs PHP 8.2 or later.
 
@@ -12,14 +13,14 @@ Needs PHP 8.2 or later.
 
 1. Copy this folder into the project, for example to `tools\procdeck\`.
 2. Edit `procdeck.ini`: at least `php` and `script` (see [Settings](#settings-procdeckini)).
-3. Double-click `procdeck.bat`.
+3. Double-click `procdeck.bat` (Linux: run `./procdeck.sh`).
 
 ## Use
 
 1. Double-click `procdeck.bat`.
 2. Press `[2] Set number of instances`, type the number, then `y`.
 3. Done. The screen refreshes every 2 seconds. In the main menu press a number
-   key, no Enter needed. When asked for a number (instance count, instance
+   key, no Enter needed (on Linux, press Enter after the key). When asked for a number (instance count, instance
    number), leave it empty and press Enter to cancel.
 
 The main screen shows each instance in a box, numbered down then across
@@ -110,7 +111,7 @@ then be deleted.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `php` | `php.exe` | `php.exe` for the menu and every instance: its full path, or `php.exe` when it is on the PATH. Read by `procdeck.bat`. |
+| `php` | `php.exe` | `php.exe` for the menu and every instance: its full path, or `php.exe` when it is on the PATH. Read by `procdeck.bat` and `procdeck.sh`; `procdeck.sh` uses `php` from the PATH instead when it ends in `.exe`. |
 | `script` | (required) | The script to run, relative to this folder or a full path. |
 | `workdir` | the script's folder | Working directory of the instances, relative to this folder or a full path. |
 | `name` | `ProcDeck` | Shown in the window titles and the heading. |
@@ -145,7 +146,7 @@ Copy `lang/en.php` to `lang/<code>.php`, translate the values, keep every
 `lang/en.php`, so a translation can be partial. Keep the menu labels short
 enough that the menu fits in 120 columns.
 
-`procdeck.bat` only prints English: it runs before PHP is known to work.
+`procdeck.bat` and `procdeck.sh` only print English: it runs before PHP is known to work.
 
 ## How it works
 
