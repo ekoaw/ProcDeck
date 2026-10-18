@@ -126,7 +126,7 @@ They win over variables of the same name the supervisor itself has.
 
 ```ini
 [instance_env]
-METRICS_INSTANCE_LABEL = {host}-{environment}-{n}
+INSTANCE_NAME = {host}-{environment}-{n}
 ```
 
 Section `[text]`: overrides single texts of the language file, by key (see
@@ -134,7 +134,7 @@ Section `[text]`: overrides single texts of the language file, by key (see
 
 ```ini
 [text]
-all_crash_loop = "!! Every instance is in a crash loop: check .env and the broker. See the log: [6]"
+all_crash_loop = "!! Every instance is in a crash loop: check .env and the database. See the log: [6]"
 ```
 
 Values are read as written (`INI_SCANNER_RAW`); quote a value that has a `;`.
