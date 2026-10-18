@@ -85,6 +85,7 @@ return [
     'confirm_shutdown' => 'Shut down the supervisor? All instances are stopped cleanly; the number of instances is remembered.',
     'send_failed' => 'Could not send the command to the supervisor ({file}).',
     'exit_message' => "Exiting. The instances keep running in the '{window}' window.",
+    'exit_message_down' => 'Exiting. The supervisor is not running, so no instances are running.',
     'script_not_found' => "Script not found: {script}\nCheck 'script' in {ini}",
 
     // Instance table ([9]).

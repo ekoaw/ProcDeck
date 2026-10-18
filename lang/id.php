@@ -51,6 +51,7 @@ return [
     'confirm_shutdown' => 'Matikan supervisor? Semua instance dihentikan dengan rapi; jumlah instance tetap diingat.',
     'send_failed' => 'Gagal mengirim perintah ke supervisor ({file}).',
     'exit_message' => "Keluar. Instance tetap berjalan di jendela '{window}'.",
+    'exit_message_down' => 'Keluar. Supervisor tidak berjalan, jadi tidak ada instance yang berjalan.',
     'script_not_found' => "Script tidak ditemukan: {script}\nPeriksa 'script' di {ini}",
 
     'all_heading' => 'Semua instance',

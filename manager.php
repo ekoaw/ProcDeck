@@ -708,7 +708,9 @@ while (true) {
             show_all();
             break;
         case '0':
-            echo t('exit_message', ['window' => t('supervisor_window', ['env' => procdeck_environment_tag()])]) . "\n";
+            echo (procdeck_supervisor_running()
+                ? t('exit_message', ['window' => t('supervisor_window', ['env' => procdeck_environment_tag()])])
+                : t('exit_message_down')) . "\n";
             exit(0);
         default:
             echo RED . t('unknown_choice') . RESET . "\n";
