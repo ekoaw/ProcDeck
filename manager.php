@@ -796,17 +796,15 @@ function on_path(string $program): bool
 $config = procdeck_config();
 set_title();
 $ini = procdeck_ini();
-$vars = ['ini' => realpath(PROCDECK_INI) ?: PROCDECK_INI, 'script' => $config['script'], 'workdir' => $config['workdir'], 'program' => $config['command'][0] ?? ''];
-$hasCommand = isset($ini['command']);
+$vars = ['ini' => realpath(PROCDECK_INI) ?: PROCDECK_INI, 'workdir' => $config['workdir'], 'program' => $config['command'][0] ?? ''];
 $error = match (true) {
-    $hasCommand && (!is_array($ini['command']) || trim((string) reset($ini['command'])) === '') => t('config_command_lines', $vars),
-    $hasCommand && trim((string) ($ini['script'] ?? '')) !== '' => t('config_both', $vars),
-    $hasCommand && trim((string) ($ini['workdir'] ?? '')) === '' => t('config_workdir_required', $vars),
-    !$hasCommand && !is_file($config['script']) => t('script_not_found', $vars),
+    isset($ini['script']) => t('config_script_gone', $vars),
+    !is_array($ini['command'] ?? null) || trim((string) reset($ini['command'])) === '' => t('config_command_lines', $vars),
+    trim((string) ($ini['workdir'] ?? '')) === '' => t('config_workdir_required', $vars),
     !is_dir($config['workdir']) => t('workdir_not_found', $vars),
-    $hasCommand && preg_match('~[\\\\/]~', $vars['program']) && !is_file($vars['program']) => t('command_not_found', $vars),
-    // A bare name (go, cmd.exe) is looked up on the PATH, as starting it will.
-    $hasCommand && !preg_match('~[\\\\/]~', $vars['program']) && !on_path($vars['program']) => t('command_not_found', $vars),
+    preg_match('~[\\\\/]~', $vars['program']) && !is_file($vars['program']) => t('command_not_found', $vars),
+    // A bare name (php, go, cmd.exe) is looked up on the PATH, as starting it will.
+    !preg_match('~[\\\\/]~', $vars['program']) && !on_path($vars['program']) => t('command_not_found', $vars),
     default => null,
 };
 if ($error !== null) {

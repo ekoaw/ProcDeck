@@ -2,8 +2,8 @@
 
 Runs N copies of one program on a Windows server, restarts the ones that
 exit, and changes how many run, without opening a cmd window per copy. The
-program is a PHP script (`php.exe service.php`) by default, or any command:
-a compiled Go service, `node server.js`, a `.bat` or `.sh` script. No service
+program is any command: `php.exe service.php`, a compiled Go service,
+`node server.js`, a `.bat` or `.sh` script. No service
 wrapper and no .exe of its own: plain PHP scripts and a .bat an operator
 double-clicks. It also runs on Linux, which is how it is tested without a
 Windows machine: `procdeck.sh` is the Linux counterpart of `procdeck.bat`.
@@ -13,7 +13,7 @@ Needs PHP 8.2 or later for ProcDeck itself, whatever the instances run.
 ## Setup
 
 1. Copy this folder into the project, for example to `tools\procdeck\`.
-2. Edit `procdeck.ini`: at least `php` and `script` (see [Settings](#settings-procdeckini)).
+2. Edit `procdeck.ini`: at least `php`, `command[]` and `workdir` (see [Settings](#settings-procdeckini)).
 3. Double-click `procdeck.bat` (Linux: run `./procdeck.sh`).
 
 ## Use
@@ -133,18 +133,23 @@ then be deleted.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `php` | `php.exe` | `php.exe` for the menu and every instance: its full path, or `php.exe` when it is on the PATH. Read by `procdeck.bat` and `procdeck.sh`; `procdeck.sh` uses `php` from the PATH instead when it ends in `.exe`. |
-| `script` | (`script` or `command[]`) | The PHP script to run with `php`, relative to this folder or a full path. |
-| `command[]` | (`script` or `command[]`) | Any other program, one `command[] =` line per argument; see [Running other programs](#running-other-programs). |
-| `workdir` | the script's folder; required with `command[]` | Working directory of the instances, relative to this folder or a full path. |
+| `php` | `php.exe` | `php.exe` that runs ProcDeck itself (menu and supervisor): its full path, or `php.exe` when it is on the PATH. Read by `procdeck.bat` and `procdeck.sh`; `procdeck.sh` uses `php` from the PATH instead when it ends in `.exe`. Instances run whatever `command[]` says, which can be another PHP. |
+| `command[]` | (required) | The program each instance runs, one `command[] =` line per argument; see [The command](#the-command). |
+| `workdir` | (required) | The folder the instances run in, relative to this folder or a full path. |
 | `name` | `ProcDeck` | Shown in the window titles and the heading. |
 | `environment` | empty | Label shown as `[STAGING]`; `production`/`prod` in red, anything else yellow. Empty = no label. |
 | `lang` | `en` | Language of the screens and `supervisor.log`: a file in `lang\`. Ships with `en` and `id`. |
 | `log_max_total_mb` | `20` | Size the log folder is kept under, in MB. |
 
-### Running other programs
+### The command
 
 ```ini
+; a PHP script
+command[] = C:\php\php.exe
+command[] = service.php
+workdir = ..\..
+
+; a compiled program with arguments
 command[] = bin\service.exe
 command[] = --port=8080
 workdir = ..\..
@@ -166,7 +171,9 @@ workdir = ..\..
   `sh`, `go`), not the program's; and on Windows a stop can take until the
   30-second kill when `cmd.exe` holds on to a batch file. For a server, point
   `command[]` at the program itself (`service.exe`, `node.exe server.js`).
-- `script` and `command[]` cannot both be set; the menu says which line to fix.
+- A missing or wrong `command[]` or `workdir` stops the menu at start with the
+  line to fix; a `procdeck.ini` that still has the old `script =` says how to
+  rewrite it.
 
 Section `[instance_env]`: extra environment variables for each instance.
 `{n}` is the instance number, `{host}` the server's name in lowercase,
@@ -219,7 +226,8 @@ The supervisor is the only writer of `state.json` and `desired.json`
 (write-then-rename); the menu is the only writer of command files. No file has
 two writers. `state.json` records whether the supervisor stopped cleanly; a new
 supervisor that finds it did not first kills the previous instances, but only
-PIDs whose command line still contains the script, so a reused PID is left alone.
+PIDs whose command line still contains every argument of `command[]`, so a
+reused PID is left alone.
 
 Windows constraints behind the design:
 

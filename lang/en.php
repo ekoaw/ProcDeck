@@ -90,12 +90,11 @@ return [
     'exit_message' => "Exiting. The instances keep running in the '{window}' window.",
     'exit_message_down' => 'Exiting. The supervisor is not running, so no instances are running.',
     'exit_message_died' => 'Exiting. The supervisor died unexpectedly: its old instances are still running unwatched. Open the menu again: they are stopped first.',
-    'script_not_found' => "Script not found: {script}\nCheck 'script' in {ini}",
     'command_not_found' => "Program not found: {program}\nCheck the first 'command[]' line in {ini}",
     'workdir_not_found' => "Folder not found: {workdir}\nCheck 'workdir' in {ini}",
     'config_command_lines' => "Write the command as 'command[] = ...' lines, one per argument, in {ini}",
-    'config_both' => "Set either 'script' or 'command[]' in {ini}, not both",
-    'config_workdir_required' => "'command[]' needs 'workdir' in {ini}",
+    'config_script_gone' => "'script' is no longer used: write 'command[] = C:\\php\\php.exe' and 'command[] = <script>' in {ini}",
+    'config_workdir_required' => "Set 'workdir', the folder the instances run in, in {ini}",
 
     // Instance table ([7]).
     'all_heading' => 'All instances',
