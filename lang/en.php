@@ -46,6 +46,7 @@ return [
     'all_crash_loop' => '!! Every instance is in a crash loop: the cause is most likely outside them (configuration, a dependency). See the log: [5]',
     'some_crash_loop' => '!! {count} instance(s) in a crash loop (keep exiting). See the log: [5]',
     'no_instances' => 'No instances yet. Press [2] to set the number of instances.',
+    'all_stopped' => 'All instances stopped ({count}). Press [4] to start {count} again.',
     'all_healthy' => 'All instances healthy.',
     'all_healthy_hint' => 'Press [8] for details.',
     'needs_attention' => 'Needs attention:',

@@ -509,8 +509,12 @@ function draw(): void
         }
 
         if ($instances === []) {
+            // Stopped on purpose ([4], or [2] → 0) reads differently from never set up.
+            [$count, $previous] = desired();
             $lines[] = '';
-            $lines[] = t('no_instances');
+            $lines[] = $count === 0 && $previous > 0
+                ? YELLOW . t('all_stopped', ['count' => $previous]) . RESET
+                : t('no_instances');
         } else {
             $segment = str_repeat('─', 18);
             $lines[] = '┌' . implode('┬', array_fill(0, $columns, $segment)) . '┐';

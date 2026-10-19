@@ -18,6 +18,7 @@ return [
     'all_crash_loop' => '!! Semua instance crash loop: kemungkinan penyebabnya di luar instance (konfigurasi, dependensi). Lihat log: [5]',
     'some_crash_loop' => '!! {count} instance crash loop (mati berulang). Lihat log: [5]',
     'no_instances' => 'Belum ada instance. Pilih [2] untuk mengatur jumlah instance.',
+    'all_stopped' => 'Semua instance dihentikan ({count}). Pilih [4] untuk menjalankan {count} lagi.',
     'all_healthy' => 'Semua instance healthy.',
     'all_healthy_hint' => 'Pilih [8] untuk melihat detail.',
     'needs_attention' => 'Perlu perhatian:',
