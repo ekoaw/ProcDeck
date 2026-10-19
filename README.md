@@ -29,12 +29,12 @@ The menu:
 | --- | --- |
 | `[1]` | Refresh now. |
 | `[2]` | Set the number of instances (0 stops them all). |
-| `[3]` | Restart one instance by number, or all with `a`. |
-| `[4]` | **Stop all instances**; after that it reads **Start N instances** and starts the same number again. |
+| `[3]` | **Stop all instances**; after that it reads **Start N instances** and starts the same number again. |
+| `[4]` | Restart one instance by number, or all with `a`. |
 | `[5]` | Live log of one instance by number, or of all with `a`. |
 | `[6]` | Open the log folder. |
-| `[7]` | Shut down / start the supervisor. |
-| `[8]` | Table of all instances. |
+| `[7]` | Table of all instances. |
+| `[8]` | Shut down / start the supervisor. |
 | `[0]` | Exit the menu; the instances keep running. |
 
 The main screen shows each instance in a box, numbered down then across
@@ -68,11 +68,11 @@ The lines above the box:
   started (restarts from the menu do not count) and the last one (instance
   number, time, exit code), the server's free RAM, and the log folder size. The
   restart count goes back to 0 when the supervisor is restarted; per instance it
-  is in the `Restarts` column of `[8]`.
+  is in the `Restarts` column of `[7]`.
 - `!!` (yellow): the log folder is over its limit.
 
 Under the box, `Needs attention` lists the instances that are not H, one line
-each, as many as fit in the window (at most 6). `[8]` shows the full table (PID,
+each, as many as fit in the window (at most 6). `[7]` shows the full table (PID,
 CPU, memory, uptime, restarts, last exit).
 
 ### The two windows
@@ -84,9 +84,9 @@ window runs every instance:
 | Action | Result |
 | --- | --- |
 | Closing the **ProcDeck Manager** window / `[0]` | Safe, the instances keep running. |
-| Menu `[7] Shut down supervisor` | Every instance is stopped cleanly, then the supervisor exits. The instance count is remembered; `[7] Start supervisor` starts it again. **The recommended way to stop.** |
+| Menu `[8] Shut down supervisor` | Every instance is stopped cleanly, then the supervisor exits. The instance count is remembered; `[8] Start supervisor` starts it again. **The recommended way to stop.** |
 | Closing the **ProcDeck Supervisor** window | **Every instance dies at once** (not cleanly). Open `procdeck.bat` again to start them. |
-| The supervisor process dies on its own (rare: ended from Task Manager → Details, or errors without pause) | The instances keep running unwatched until a supervisor runs again. The menu shows `!! The supervisor died unexpectedly`. Press `[7]` (or open `procdeck.bat` again): the new supervisor first stops those old instances, then starts the usual count. |
+| The supervisor process dies on its own (rare: ended from Task Manager → Details, or errors without pause) | The instances keep running unwatched until a supervisor runs again. The menu shows `!! The supervisor died unexpectedly`. Press `[8]` (or open `procdeck.bat` again): the new supervisor first stops those old instances, then starts the usual count. |
 | RDP disconnect | Safe. |
 | Log off / server restart | Every instance dies. Open `procdeck.bat` again; the last instance count is remembered. |
 
@@ -95,7 +95,7 @@ exiting, the wait before the next start grows (2, 4, 8, … up to 60 seconds);
 the **Restarts** and **Last exit** columns show it, and the reason is in its log.
 
 Ctrl+C in the supervisor window is not a supported way to stop: it sometimes
-restarts the instances instead. Use `[7]`.
+restarts the instances instead. Use `[8]`.
 
 ### Staging and production on one server
 

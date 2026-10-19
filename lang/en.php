@@ -28,8 +28,8 @@ return [
     'supervisor_running' => 'RUNNING',
     'supervisor_down' => 'DOWN',
     'elapsed' => 'for {duration}',
-    'supervisor_died' => '!! The supervisor died unexpectedly. Press [7]: the old instances are stopped first.',
-    'supervisor_stopped' => 'Supervisor DOWN, all instances are stopped. Press [7] to start it.',
+    'supervisor_died' => '!! The supervisor died unexpectedly. Press [8]: the old instances are stopped first.',
+    'supervisor_stopped' => 'Supervisor DOWN, all instances are stopped. Press [8] to start it.',
     'row_instances' => 'Instances',
     'row_total' => 'Total',
     'row_info' => 'Info',
@@ -46,16 +46,16 @@ return [
     'all_crash_loop' => '!! Every instance is in a crash loop: the cause is most likely outside them (configuration, a dependency). See the log: [5]',
     'some_crash_loop' => '!! {count} instance(s) in a crash loop (keep exiting). See the log: [5]',
     'no_instances' => 'No instances yet. Press [2] to set the number of instances.',
-    'all_stopped' => 'All instances stopped ({count}). Press [4] to start {count} again.',
+    'all_stopped' => 'All instances stopped ({count}). Press [3] to start {count} again.',
     'all_healthy' => 'All instances healthy.',
-    'all_healthy_hint' => 'Press [8] for details.',
+    'all_healthy_hint' => 'Press [7] for details.',
     'needs_attention' => 'Needs attention:',
     'problem_crash_loop' => '{count}x in a row · exit {exit} · {next}',
     'problem_retry_in' => 'retrying in {seconds}s',
     'problem_retrying' => 'retrying now',
     'problem_stopping' => 'for {seconds}s · pid {pid}',
     'problem_restarting' => 'in {seconds}s · restarted {count}x · exit {exit}',
-    'more_problems' => '... and {count} more, press [8] to see all.',
+    'more_problems' => '... and {count} more, press [7] to see all.',
 
     // Menu, one key each; the prompt waits for a single key.
     'menu_refresh' => 'Refresh',
@@ -83,7 +83,7 @@ return [
     'ask_restart_id' => 'Instance number to restart (a = all, empty = cancel): ',
     'confirm_restart_one' => 'Restart instance {id}?',
     'confirm_restart_all' => 'Restart ALL instances?',
-    'confirm_stop_all' => 'Stop ALL instances? [4] starts the same number again.',
+    'confirm_stop_all' => 'Stop ALL instances? [3] starts the same number again.',
     'confirm_start_count' => 'Start {count} instances again?',
     'confirm_shutdown' => 'Shut down the supervisor? All instances are stopped cleanly; the number of instances is remembered.',
     'send_failed' => 'Could not send the command to the supervisor ({file}).',
@@ -92,7 +92,7 @@ return [
     'exit_message_died' => 'Exiting. The supervisor died unexpectedly: its old instances are still running unwatched. Open the menu again: they are stopped first.',
     'script_not_found' => "Script not found: {script}\nCheck 'script' in {ini}",
 
-    // Instance table ([8]).
+    // Instance table ([7]).
     'all_heading' => 'All instances',
     'none_running' => 'No instances are running.',
     'col_no' => 'No',

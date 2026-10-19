@@ -329,7 +329,7 @@ function in_crash_loop(array $i): bool
     return $i['status'] !== 'stopping' && ($i['crash_streak'] ?? 0) >= PROCDECK_CRASH_LOOP_AFTER;
 }
 
-/** One line per instance that is not healthy, for the main screen; [8] has the full table. */
+/** One line per instance that is not healthy, for the main screen; [7] has the full table. */
 function problem_line(array $i, float $now): string
 {
     $id = sprintf('  #%-3d ', $i['id']);
@@ -351,7 +351,7 @@ function problem_line(array $i, float $now): string
 
 /**
  * The menu as three rows, filled down each column like the grid. Column widths
- * fit every label [4] and [7] can switch to, so the menu does not shift.
+ * fit every label [3] and [8] can switch to, so the menu does not shift.
  *
  * @return list<string>
  */
@@ -359,15 +359,15 @@ function menu_lines(bool $supervisor): array
 {
     // Each entry: the label shown, then the other labels it can switch to.
     $columns = [
-        ['1' => [t('menu_refresh')], '2' => [t('menu_scale')], '3' => [t('menu_restart')]],
         [
-            '4' => [start_stop_label(), t('menu_stop_all'), t('menu_start_count', ['count' => PROCDECK_MAX_INSTANCES]), t('menu_start')],
-            '5' => [t('menu_log')],
-            '6' => [t('menu_log_folder')],
+            '1' => [t('menu_refresh')],
+            '2' => [t('menu_scale')],
+            '3' => [start_stop_label(), t('menu_stop_all'), t('menu_start_count', ['count' => PROCDECK_MAX_INSTANCES]), t('menu_start')],
         ],
+        ['4' => [t('menu_restart')], '5' => [t('menu_log')], '6' => [t('menu_log_folder')]],
         [
-            '7' => [t($supervisor ? 'menu_supervisor_stop' : 'menu_supervisor_start'), t('menu_supervisor_stop'), t('menu_supervisor_start')],
-            '8' => [t('menu_show_all')],
+            '7' => [t('menu_show_all')],
+            '8' => [t($supervisor ? 'menu_supervisor_stop' : 'menu_supervisor_start'), t('menu_supervisor_stop'), t('menu_supervisor_start')],
             '0' => [t('menu_exit')],
         ],
     ];
@@ -396,7 +396,7 @@ function desired(): array
     return [(int) ($desired['count'] ?? 0), (int) ($desired['previous'] ?? 0)];
 }
 
-/** [4]: stop all while instances should run, else start the count from before the stop. */
+/** [3]: stop all while instances should run, else start the count from before the stop. */
 function start_stop_label(): string
 {
     [$count, $previous] = desired();
@@ -428,7 +428,7 @@ function start_stop(): void
 /**
  * The main screen, laid out for a default 30-line console at up to the 60-instance
  * cap: status lines, the instance grid in a box, then the instances that are not
- * healthy in whatever room is left. [8] shows every row in full.
+ * healthy in whatever room is left. [7] shows every row in full.
  */
 function draw(): void
 {
@@ -509,7 +509,7 @@ function draw(): void
         }
 
         if ($instances === []) {
-            // Stopped on purpose ([4], or [2] → 0) reads differently from never set up.
+            // Stopped on purpose ([3], or [2] → 0) reads differently from never set up.
             [$count, $previous] = desired();
             $lines[] = '';
             $lines[] = $count === 0 && $previous > 0
@@ -807,6 +807,9 @@ while (true) {
             scale();
             break;
         case '3':
+            start_stop();
+            break;
+        case '4':
             $id = ask(t('ask_restart_id'));
             if (strtolower($id) === 'a') {
                 if (confirm(t('confirm_restart_all'))) {
@@ -815,9 +818,6 @@ while (true) {
             } elseif (ctype_digit($id) && confirm(t('confirm_restart_one', ['id' => $id]))) {
                 send(['action' => 'restart', 'id' => (int) $id]);
             }
-            break;
-        case '4':
-            start_stop();
             break;
         case '5':
             show_log();
@@ -831,14 +831,14 @@ while (true) {
             }
             break;
         case '7':
+            show_all();
+            break;
+        case '8':
             if (!procdeck_supervisor_running()) {
                 start_supervisor();
             } elseif (confirm(t('confirm_shutdown'))) {
                 send(['action' => 'shutdown', 'at' => microtime(true)]);
             }
-            break;
-        case '8':
-            show_all();
             break;
         case '0':
             // A supervisor that died leaves its instances running unwatched.
