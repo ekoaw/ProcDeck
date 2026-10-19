@@ -56,27 +56,28 @@ function read_choice(): string
 
         return ask('');
     }
-    $key = read_key('1234567890', REFRESH_S, '1');
+    $key = read_key('1234567890', REFRESH_S) ?? '1';
     echo "\n";
 
     return $key;
 }
 
 /**
- * choice.exe for a Linux terminal: the first key in $keys pressed within
- * $seconds, or $default. Other keys are ignored, as choice.exe ignores them.
- * Without a terminal (input from a pipe or a file) it reads a line instead.
+ * choice.exe for a Linux terminal: the first key in $keys (any key when $keys
+ * is '') pressed within $seconds, or null. Other keys are ignored, as
+ * choice.exe ignores them. Without a terminal (input from a pipe or a file) it
+ * reads a line instead.
  */
-function read_key(string $keys, int $seconds, string $default): string
+function read_key(string $keys, int $seconds): ?string
 {
     $read = [STDIN];
     $write = $except = null;
     if (!stream_isatty(STDIN)) {
-        return stream_select($read, $write, $except, $seconds) > 0 ? ask('') : $default;
+        return stream_select($read, $write, $except, $seconds) > 0 ? ask('') : null;
     }
     // Key by key only while waiting: the prompts after it read whole lines.
     shell_exec('stty -icanon -echo');
-    $key = $default;
+    $key = null;
     $until = microtime(true) + $seconds;
     while (($left = $until - microtime(true)) > 0) {
         $read = [STDIN];
@@ -84,7 +85,7 @@ function read_key(string $keys, int $seconds, string $default): string
             break;
         }
         $pressed = strtoupper((string) fread(STDIN, 1));
-        if ($pressed !== '' && str_contains($keys, $pressed)) {
+        if ($pressed !== '' && ($keys === '' || str_contains($keys, $pressed))) {
             $key = $pressed;
             break;
         }
@@ -328,7 +329,7 @@ function in_crash_loop(array $i): bool
     return $i['status'] !== 'stopping' && ($i['crash_streak'] ?? 0) >= PROCDECK_CRASH_LOOP_AFTER;
 }
 
-/** One line per instance that is not healthy, for the main screen; [9] has the full table. */
+/** One line per instance that is not healthy, for the main screen; [8] has the full table. */
 function problem_line(array $i, float $now): string
 {
     $id = sprintf('  #%-3d ', $i['id']);
@@ -350,27 +351,32 @@ function problem_line(array $i, float $now): string
 
 /**
  * The menu as three rows, filled down each column like the grid. Column widths
- * fit both labels of [8], so the menu does not shift when the supervisor stops.
+ * fit every label [4] and [7] can switch to, so the menu does not shift.
  *
  * @return list<string>
  */
 function menu_lines(bool $supervisor): array
 {
+    // Each entry: the label shown, then the other labels it can switch to.
     $columns = [
-        ['1' => 'menu_refresh', '2' => 'menu_scale', '3' => 'menu_restart_one'],
-        ['4' => 'menu_restart_all', '5' => 'menu_stop_all', '6' => 'menu_log'],
-        ['7' => 'menu_log_folder', '8' => $supervisor ? 'menu_supervisor_stop' : 'menu_supervisor_start', '9' => 'menu_show_all'],
-        ['0' => 'menu_exit'],
+        ['1' => [t('menu_refresh')], '2' => [t('menu_scale')], '3' => [t('menu_restart')]],
+        [
+            '4' => [start_stop_label(), t('menu_stop_all'), t('menu_start_count', ['count' => PROCDECK_MAX_INSTANCES]), t('menu_start')],
+            '5' => [t('menu_log')],
+            '6' => [t('menu_log_folder')],
+        ],
+        [
+            '7' => [t($supervisor ? 'menu_supervisor_stop' : 'menu_supervisor_start'), t('menu_supervisor_stop'), t('menu_supervisor_start')],
+            '8' => [t('menu_show_all')],
+            '0' => [t('menu_exit')],
+        ],
     ];
     $lines = ['  ', '  ', '  '];
-    foreach ($columns as $c => $column) {
-        $width = $c === 2 ? max(visible_length(t('menu_supervisor_stop')), visible_length(t('menu_supervisor_start'))) : 0;
-        foreach ($column as $label) {
-            $width = max($width, visible_length(t($label)));
-        }
-        $r = $c === 3 ? 2 : 0;
-        foreach ($column as $key => $label) {
-            $lines[$r++] .= pad("[{$key}] " . t($label), $width + 6);
+    foreach ($columns as $column) {
+        $width = max(array_map('visible_length', array_merge(...array_values($column))));
+        $r = 0;
+        foreach ($column as $key => $labels) {
+            $lines[$r++] .= pad("[{$key}] {$labels[0]}", $width + 6);
         }
     }
 
@@ -378,9 +384,51 @@ function menu_lines(bool $supervisor): array
 }
 
 /**
+ * The count that should run and, after a stop to 0, the count before it. Read
+ * from desired.json, the supervisor's own record, so it holds while it is down.
+ *
+ * @return array{int, int}
+ */
+function desired(): array
+{
+    $desired = procdeck_read_json(PROCDECK_DESIRED_FILE) ?? [];
+
+    return [(int) ($desired['count'] ?? 0), (int) ($desired['previous'] ?? 0)];
+}
+
+/** [4]: stop all while instances should run, else start the count from before the stop. */
+function start_stop_label(): string
+{
+    [$count, $previous] = desired();
+
+    return match (true) {
+        $count > 0 => t('menu_stop_all'),
+        $previous > 0 => t('menu_start_count', ['count' => $previous]),
+        default => t('menu_start'),
+    };
+}
+
+function start_stop(): void
+{
+    [$count, $previous] = desired();
+    if ($count > 0) {
+        if (confirm(t('confirm_stop_all'))) {
+            send(['action' => 'scale', 'count' => 0]);
+        }
+    } elseif ($previous === 0) {
+        scale();
+    } elseif (confirm(t('confirm_start_count', ['count' => $previous]))) {
+        send(['action' => 'scale', 'count' => $previous]);
+        if (!procdeck_supervisor_running()) {
+            start_supervisor();
+        }
+    }
+}
+
+/**
  * The main screen, laid out for a default 30-line console at up to the 60-instance
  * cap: status lines, the instance grid in a box, then the instances that are not
- * healthy in whatever room is left. [9] shows every row in full.
+ * healthy in whatever room is left. [8] shows every row in full.
  */
 function draw(): void
 {
@@ -558,20 +606,26 @@ function set_title(string $suffix = ''): void
     }
 }
 
-/** True when 0 is pressed within a second; the live log view polls on this. */
+/**
+ * True when a key is pressed within a second; the live log views poll on this.
+ * On Windows any letter or digit (choice.exe takes no other keys), on Linux any key.
+ */
 function back_pressed(): bool
 {
     if (procdeck_is_windows()) {
-        // X is only the timeout default: on Windows choice.exe is the one key read that can time out.
-        exec('choice /C 0X /N /T 1 /D X', $out, $code);
-        if ($code === 1 || $code === 2) {
-            return $code === 1;
+        $keys = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $started = microtime(true);
+        exec('choice /C ' . $keys . ' /N /T 1 /D Z', $out, $code);
+        if ($code >= 1 && $code <= strlen($keys)) {
+            // Z is also what a timeout returns; a Z that comes back early was pressed.
+            return $code !== strlen($keys) || microtime(true) - $started < 0.9;
         }
+        ask('');
 
-        return ask('') === '0';
+        return true;
     }
 
-    return read_key('0', 1, '') === '0';
+    return read_key('', 1) !== null;
 }
 
 function instance_log(string $id): ?string
@@ -750,24 +804,21 @@ while (true) {
             break;
         case '3':
             $id = ask(t('ask_restart_id'));
-            if (ctype_digit($id) && confirm(t('confirm_restart_one', ['id' => $id]))) {
+            if (strtolower($id) === 'a') {
+                if (confirm(t('confirm_restart_all'))) {
+                    send(['action' => 'restart', 'id' => 'all']);
+                }
+            } elseif (ctype_digit($id) && confirm(t('confirm_restart_one', ['id' => $id]))) {
                 send(['action' => 'restart', 'id' => (int) $id]);
             }
             break;
         case '4':
-            if (confirm(t('confirm_restart_all'))) {
-                send(['action' => 'restart', 'id' => 'all']);
-            }
+            start_stop();
             break;
         case '5':
-            if (confirm(t('confirm_stop_all'))) {
-                send(['action' => 'scale', 'count' => 0]);
-            }
-            break;
-        case '6':
             show_log();
             break;
-        case '7':
+        case '6':
             if (procdeck_is_windows()) {
                 pclose(popen('explorer "' . realpath(PROCDECK_LOG_DIR) . '"', 'r'));
             } else {
@@ -775,14 +826,14 @@ while (true) {
                 pause();
             }
             break;
-        case '8':
+        case '7':
             if (!procdeck_supervisor_running()) {
                 start_supervisor();
             } elseif (confirm(t('confirm_shutdown'))) {
                 send(['action' => 'shutdown', 'at' => microtime(true)]);
             }
             break;
-        case '9':
+        case '8':
             show_all();
             break;
         case '0':

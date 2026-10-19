@@ -252,8 +252,11 @@ function handle_commands(array &$instances, int &$desired, bool &$running, float
                 $running = false;
             }
         } elseif ($action === 'scale') {
-            $desired = max(0, min(PROCDECK_MAX_INSTANCES, (int) ($cmd['count'] ?? 0)));
-            procdeck_write_json(PROCDECK_DESIRED_FILE, ['count' => $desired]);
+            $count = max(0, min(PROCDECK_MAX_INSTANCES, (int) ($cmd['count'] ?? 0)));
+            // Kept across a stop to 0, so the menu can offer to start the same count again.
+            $previous = $count === 0 && $desired > 0 ? $desired : (int) (procdeck_read_json(PROCDECK_DESIRED_FILE)['previous'] ?? 0);
+            $desired = $count;
+            procdeck_write_json(PROCDECK_DESIRED_FILE, ['count' => $desired, 'previous' => $previous]);
             say(t('sup_scaled', ['count' => $desired]));
         } elseif ($action === 'restart') {
             $target = $cmd['id'] ?? 'all';

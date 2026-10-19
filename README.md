@@ -23,6 +23,20 @@ Needs PHP 8.2 or later.
    key, no Enter needed. When asked for a number (instance count, instance
    number), leave it empty and press Enter to cancel.
 
+The menu:
+
+| Key | Action |
+| --- | --- |
+| `[1]` | Refresh now. |
+| `[2]` | Set the number of instances (0 stops them all). |
+| `[3]` | Restart one instance by number, or all with `a`. |
+| `[4]` | **Stop all instances**; after that it reads **Start N instances** and starts the same number again. |
+| `[5]` | Live log of one instance by number, or of all with `a`. |
+| `[6]` | Open the log folder. |
+| `[7]` | Shut down / start the supervisor. |
+| `[8]` | Table of all instances. |
+| `[0]` | Exit the menu; the instances keep running. |
+
 The main screen shows each instance in a box, numbered down then across
 (columns of 5 up to 20 instances, then 10; at most 60 instances), as one letter:
 
@@ -31,7 +45,7 @@ The main screen shows each instance in a box, numbered down then across
 | **H** (green) | HEALTHY | Running normally. |
 | **R** (red) | RESTARTING | Exited on its own, will be started again automatically. |
 | **S** (yellow) | STOPPING | Being stopped (restart, or the instance count was lowered). |
-| **C** (red) | CRASH LOOP | Exited 3 times in a row without running 1 minute. Still retried automatically, but something is almost certainly wrong: see its log (`[6]`). |
+| **C** (red) | CRASH LOOP | Exited 3 times in a row without running 1 minute. Still retried automatically, but something is almost certainly wrong: see its log (`[5]`). |
 
 When an instance is in a crash loop, a red line `!! N instance(s) in a crash
 loop` appears. When **every** instance is in a crash loop, the cause is almost
@@ -54,11 +68,11 @@ The lines above the box:
   started (restarts from the menu do not count) and the last one (instance
   number, time, exit code), the server's free RAM, and the log folder size. The
   restart count goes back to 0 when the supervisor is restarted; per instance it
-  is in the `Restarts` column of `[9]`.
+  is in the `Restarts` column of `[8]`.
 - `!!` (yellow): the log folder is over its limit.
 
 Under the box, `Needs attention` lists the instances that are not H, one line
-each, as many as fit in the window (at most 6). `[9]` shows the full table (PID,
+each, as many as fit in the window (at most 6). `[8]` shows the full table (PID,
 CPU, memory, uptime, restarts, last exit).
 
 ### The two windows
@@ -70,9 +84,9 @@ window runs every instance:
 | Action | Result |
 | --- | --- |
 | Closing the **ProcDeck Manager** window / `[0]` | Safe, the instances keep running. |
-| Menu `[8] Shut down supervisor` | Every instance is stopped cleanly, then the supervisor exits. The instance count is remembered; `[8] Start supervisor` starts it again. **The recommended way to stop.** |
+| Menu `[7] Shut down supervisor` | Every instance is stopped cleanly, then the supervisor exits. The instance count is remembered; `[7] Start supervisor` starts it again. **The recommended way to stop.** |
 | Closing the **ProcDeck Supervisor** window | **Every instance dies at once** (not cleanly). Open `procdeck.bat` again to start them. |
-| The supervisor process dies on its own (rare: ended from Task Manager → Details, or errors without pause) | The instances keep running unwatched until a supervisor runs again. The menu shows `!! The supervisor died unexpectedly`. Press `[8]` (or open `procdeck.bat` again): the new supervisor first stops those old instances, then starts the usual count. |
+| The supervisor process dies on its own (rare: ended from Task Manager → Details, or errors without pause) | The instances keep running unwatched until a supervisor runs again. The menu shows `!! The supervisor died unexpectedly`. Press `[7]` (or open `procdeck.bat` again): the new supervisor first stops those old instances, then starts the usual count. |
 | RDP disconnect | Safe. |
 | Log off / server restart | Every instance dies. Open `procdeck.bat` again; the last instance count is remembered. |
 
@@ -81,7 +95,7 @@ exiting, the wait before the next start grows (2, 4, 8, … up to 60 seconds);
 the **Restarts** and **Last exit** columns show it, and the reason is in its log.
 
 Ctrl+C in the supervisor window is not a supported way to stop: it sometimes
-restarts the instances instead. Use `[8]`.
+restarts the instances instead. Use `[7]`.
 
 ### Staging and production on one server
 
@@ -91,15 +105,15 @@ logs and settings. Set `environment` in each `procdeck.ini`: it shows as
 
 ## Logs
 
-Folder `run\logs\` (menu `[7]`):
+Folder `run\logs\` (menu `[6]`):
 
 - `<date>-<time>-instance-<N>.log`, for example `20261017-091502-instance-7.log`:
   the output of instance N, as it used to show in a cmd window. Every start makes
-  a new file. Menu `[6]` shows the last 40 lines of the instance's newest file,
+  a new file. Menu `[5]` shows the last 40 lines of the instance's newest file,
   then new lines as they are written (also after the instance restarts, from its
-  new file). Press `0` to go back.
+  new file). Press any letter or digit to go back (on Linux, any key).
 
-  `[6]` → `a` shows all instances at once, like `docker compose logs -f`: new
+  `[5]` → `a` shows all instances at once, like `docker compose logs -f`: new
   lines from every running instance and from `supervisor.log`, each with a
   coloured `[N]` (or `[supervisor]`) prefix. It starts empty and shows what is
   written from then on, read once a second, so lines from different instances
@@ -141,7 +155,7 @@ Section `[text]`: overrides single texts of the language file, by key (see
 
 ```ini
 [text]
-all_crash_loop = "!! Every instance is in a crash loop: check .env and the database. See the log: [6]"
+all_crash_loop = "!! Every instance is in a crash loop: check .env and the database. See the log: [5]"
 ```
 
 Values are read as written (`INI_SCANNER_RAW`); quote a value that has a `;`.
