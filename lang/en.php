@@ -102,12 +102,15 @@ return [
     'col_last_exit' => 'Last exit',
 
     // Logs ([6], [7]).
-    'ask_log_id' => 'Instance number (empty = cancel): ',
+    'ask_log_id' => 'Instance number (a = all, empty = cancel): ',
     'log_not_found' => 'No log found for instance {id}.',
     'log_window' => 'log of instance {id} - press 0 to go back',
     'log_heading' => 'Log of instance {id} (live)  ·  press 0 to go back',
     'log_new_file' => 'instance {id} started again, new log: {file}',
     'log_skipped' => '... (skipped)',
+    'log_all_window' => 'logs of all instances - press 0 to go back',
+    'log_all_heading' => 'Logs of all instances (new output, live)  ·  press 0 to go back',
+    'log_prefix_supervisor' => 'supervisor',
     'log_folder' => 'Log folder: {path}',
 
     // Supervisor window and run/logs/supervisor.log.

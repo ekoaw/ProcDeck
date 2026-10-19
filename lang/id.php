@@ -61,12 +61,14 @@ return [
     'col_restarts' => 'Restart',
     'col_last_exit' => 'Exit terakhir',
 
-    'ask_log_id' => 'Nomor instance (kosong = batal): ',
+    'ask_log_id' => 'Nomor instance (a = semua, kosong = batal): ',
     'log_not_found' => 'Log instance {id} tidak ditemukan.',
     'log_window' => 'log instance {id} - tekan 0 untuk kembali',
     'log_heading' => 'Log instance {id} (diperbarui otomatis)  ·  tekan 0 untuk kembali',
     'log_new_file' => 'instance {id} menyala lagi, log baru: {file}',
     'log_skipped' => '... (dilewati)',
+    'log_all_window' => 'log semua instance - tekan 0 untuk kembali',
+    'log_all_heading' => 'Log semua instance (output baru, diperbarui otomatis)  ·  tekan 0 untuk kembali',
 
     'sup_already_running' => 'Supervisor sudah berjalan.',
     'sup_started' => 'Supervisor mulai (pid {pid}), environment: {environment}, script: {script}, jumlah: {count}',

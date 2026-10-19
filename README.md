@@ -98,6 +98,13 @@ Folder `run\logs\` (menu `[7]`):
   a new file. Menu `[6]` shows the last 40 lines of the instance's newest file,
   then new lines as they are written (also after the instance restarts, from its
   new file). Press `0` to go back.
+
+  `[6]` → `a` shows all instances at once, like `docker compose logs -f`: new
+  lines from every running instance and from `supervisor.log`, each with a
+  coloured `[N]` (or `[supervisor]`) prefix. It starts empty and shows what is
+  written from then on, read once a second, so lines from different instances
+  within the same second may be out of order. For the exact time, use the
+  timestamp the service prints on each line; ProcDeck adds none.
 - `supervisor.log`: when instances start, exit and are restarted. Above 5 MB it
   is renamed to `<date>-<time>-supervisor.log`.
 

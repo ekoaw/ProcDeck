@@ -585,31 +585,104 @@ function instance_log(string $id): ?string
     return null;
 }
 
-/** Prints what was added to $file since $offset, at most the last 16 KB, and returns the new offset. */
-function print_new(string $file, int $offset): int
+/**
+ * What was added to $file since $offset, at most the last $max bytes, the new
+ * offset, and whether older bytes were skipped. A file that shrank (rotated) is
+ * read from its start.
+ *
+ * @return array{string, int, bool}
+ */
+function read_new(string $file, int $offset, int $max): array
 {
     clearstatcache(true, $file);
     $size = @filesize($file);
     if ($size === false || $size === $offset) {
-        return $offset;
+        return ['', $offset, false];
     }
     if ($size < $offset) {
         $offset = 0;
     }
-    if ($size - $offset > 16384) {
-        echo YELLOW . t('log_skipped') . RESET . "\n";
-        $offset = $size - 16384;
+    $skipped = $size - $offset > $max;
+    if ($skipped) {
+        $offset = $size - $max;
     }
     $fh = @fopen($file, 'r');
     if ($fh === false) {
-        return $offset;
+        return ['', $offset, $skipped];
     }
     fseek($fh, $offset);
-    echo (string) stream_get_contents($fh);
+    $text = (string) stream_get_contents($fh);
     $offset = (int) ftell($fh);
     fclose($fh);
 
+    return [$text, $offset, $skipped];
+}
+
+/** Prints what was added to $file since $offset, at most the last 16 KB, and returns the new offset. */
+function print_new(string $file, int $offset): int
+{
+    [$text, $offset, $skipped] = read_new($file, $offset, 16384);
+    if ($skipped) {
+        echo YELLOW . t('log_skipped') . RESET . "\n";
+    }
+    echo $text;
+
     return $offset;
+}
+
+/**
+ * New output of every running instance and of supervisor.log, line by line with
+ * a coloured [N] prefix, until 0 is pressed. Lines are shown in the order they
+ * are read, once a second; the exact time is whatever the service prints itself.
+ * Nothing older than the moment the view opens: without timestamps of our own,
+ * old lines from several files cannot be put in order.
+ */
+function show_all_logs(): void
+{
+    // Colours as docker compose uses them; red is left out, it means trouble here.
+    $colours = ["\033[36m", "\033[33m", "\033[32m", "\033[35m", "\033[34m", "\033[96m", "\033[93m", "\033[92m", "\033[95m", "\033[94m"];
+    set_title(' - ' . t('log_all_window'));
+    echo "\033[2J\033[H" . BOLD . t('log_all_heading') . RESET . "\n---\n";
+    /** @var array<string, array{file: string, offset: int, partial: string}> $sources */
+    $sources = [];
+    $first = true;
+    do {
+        $files = ['supervisor' => PROCDECK_LOG_DIR . '/supervisor.log'];
+        foreach (current_instances() as $i) {
+            if (isset($i['log'])) {
+                $files[(string) $i['id']] = PROCDECK_LOG_DIR . '/' . $i['log'];
+            }
+        }
+        // Shared by all sources, so 60 busy instances cannot flood the console.
+        $max = max(1024, intdiv(16384, count($files)));
+        foreach ($files as $key => $file) {
+            $prefix = $key === 'supervisor'
+                ? BOLD . '[' . t('log_prefix_supervisor') . ']' . RESET . ' '
+                : $colours[((int) $key - 1) % count($colours)] . sprintf('[%2d]', $key) . RESET . ' ';
+            $source = $sources[$key] ?? null;
+            if ($source === null || $source['file'] !== $file) {
+                // Open: from the end. Started or restarted since: the new file from its start.
+                $source = ['file' => $file, 'offset' => $first ? (int) @filesize($file) : 0, 'partial' => ''];
+            }
+            [$text, $source['offset'], $skipped] = read_new($file, $source['offset'], $max);
+            if ($skipped) {
+                echo $prefix . YELLOW . t('log_skipped') . RESET . "\n";
+                $source['partial'] = '';
+            }
+            // A line is shown once it is complete, so a prefix never lands mid-line,
+            // or after a second without more output, so a last line without "\n" shows too.
+            $lines = explode("\n", $source['partial'] . $text);
+            $source['partial'] = $text === '' ? '' : (string) array_pop($lines);
+            $lines = array_filter($lines, static fn (string $line): bool => $line !== '' || $text !== '');
+            foreach ($lines as $line) {
+                echo $prefix . rtrim($line, "\r") . "\n";
+            }
+            $sources[$key] = $source;
+        }
+        $sources = array_intersect_key($sources, $files);
+        $first = false;
+    } while (!back_pressed());
+    set_title();
 }
 
 /** The last 40 lines of an instance's log, then new output as it is written, until 0 is pressed. */
@@ -617,6 +690,11 @@ function show_log(): void
 {
     $id = ask(t('ask_log_id'));
     if ($id === '') {
+        return;
+    }
+    if (strtolower($id) === 'a') {
+        show_all_logs();
+
         return;
     }
     $file = instance_log($id);
