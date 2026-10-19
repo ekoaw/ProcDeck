@@ -57,6 +57,11 @@ return [
     'exit_message_down' => 'Keluar. Supervisor tidak berjalan, jadi tidak ada instance yang berjalan.',
     'exit_message_died' => 'Keluar. Supervisor mati tidak terduga: instance lama masih berjalan tanpa diawasi. Buka menu lagi: instance lama dihentikan otomatis.',
     'script_not_found' => "Script tidak ditemukan: {script}\nPeriksa 'script' di {ini}",
+    'command_not_found' => "Program tidak ditemukan: {program}\nPeriksa baris 'command[]' pertama di {ini}",
+    'workdir_not_found' => "Folder tidak ditemukan: {workdir}\nPeriksa 'workdir' di {ini}",
+    'config_command_lines' => "Tulis command sebagai baris 'command[] = ...', satu per argumen, di {ini}",
+    'config_both' => "Isi 'script' atau 'command[]' di {ini}, jangan keduanya",
+    'config_workdir_required' => "'command[]' perlu 'workdir' di {ini}",
 
     'all_heading' => 'Semua instance',
     'none_running' => 'Tidak ada instance yang berjalan.',
@@ -74,7 +79,7 @@ return [
     'log_all_heading' => 'Log semua instance (output baru, diperbarui otomatis)  ·  tekan huruf atau angka apa saja untuk kembali',
 
     'sup_already_running' => 'Supervisor sudah berjalan.',
-    'sup_started' => 'Supervisor mulai (pid {pid}), environment: {environment}, script: {script}, jumlah: {count}',
+    'sup_started' => 'Supervisor mulai (pid {pid}), environment: {environment}, command: {command}, jumlah: {count}',
     'sup_stopped' => 'Supervisor berhenti',
     'sup_ctrl_event' => 'Ctrl event {event} diterima, menghentikan semua instance',
     'sup_shutdown_requested' => 'Supervisor diminta berhenti dari menu, menghentikan semua instance',

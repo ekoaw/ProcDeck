@@ -1,13 +1,14 @@
 # ProcDeck
 
-Runs N copies of one PHP script (`php.exe service.php`) on a Windows server,
-restarts the ones that exit, and changes how many run, without opening a cmd
-window per copy. No service wrapper and no .exe: plain PHP scripts and a .bat
-an operator double-clicks. It also runs on Linux, which is how it is tested
-without a Windows machine: `procdeck.sh` is the Linux counterpart of
-`procdeck.bat`.
+Runs N copies of one program on a Windows server, restarts the ones that
+exit, and changes how many run, without opening a cmd window per copy. The
+program is a PHP script (`php.exe service.php`) by default, or any command:
+a compiled Go service, `node server.js`, a `.bat` or `.sh` script. No service
+wrapper and no .exe of its own: plain PHP scripts and a .bat an operator
+double-clicks. It also runs on Linux, which is how it is tested without a
+Windows machine: `procdeck.sh` is the Linux counterpart of `procdeck.bat`.
 
-Needs PHP 8.2 or later.
+Needs PHP 8.2 or later for ProcDeck itself, whatever the instances run.
 
 ## Setup
 
@@ -133,12 +134,39 @@ then be deleted.
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `php` | `php.exe` | `php.exe` for the menu and every instance: its full path, or `php.exe` when it is on the PATH. Read by `procdeck.bat` and `procdeck.sh`; `procdeck.sh` uses `php` from the PATH instead when it ends in `.exe`. |
-| `script` | (required) | The script to run, relative to this folder or a full path. |
-| `workdir` | the script's folder | Working directory of the instances, relative to this folder or a full path. |
+| `script` | (`script` or `command[]`) | The PHP script to run with `php`, relative to this folder or a full path. |
+| `command[]` | (`script` or `command[]`) | Any other program, one `command[] =` line per argument; see [Running other programs](#running-other-programs). |
+| `workdir` | the script's folder; required with `command[]` | Working directory of the instances, relative to this folder or a full path. |
 | `name` | `ProcDeck` | Shown in the window titles and the heading. |
 | `environment` | empty | Label shown as `[STAGING]`; `production`/`prod` in red, anything else yellow. Empty = no label. |
 | `lang` | `en` | Language of the screens and `supervisor.log`: a file in `lang\`. Ships with `en` and `id`. |
 | `log_max_total_mb` | `20` | Size the log folder is kept under, in MB. |
+
+### Running other programs
+
+```ini
+command[] = bin\service.exe
+command[] = --port=8080
+workdir = ..\..
+```
+
+- One argument per line, passed as written: no shell, no quoting. A relative
+  path, the program's included, is relative to `workdir`. A bare name
+  (`go`, `cmd.exe`, `node`) is looked up on the PATH.
+- The program must stop cleanly on **Ctrl+Break** on Windows (Go:
+  `os.Interrupt`; Node: `SIGBREAK`; Python: `signal.SIGBREAK`) and on
+  **SIGTERM** on Linux. One that does not is killed after 30 seconds, with
+  every process it started.
+- Each instance runs in its own process group (`setsid` on Linux), so a stop
+  or a kill reaches the program and whatever it started.
+- A script goes through its interpreter: `command[] = cmd.exe`,
+  `command[] = /c`, `command[] = run.bat` on Windows; `command[] = /bin/sh`,
+  `command[] = run.sh` on Linux. The same goes for `go run`. These work, with
+  two limits: CPU and memory on the screen are the wrapper's (`cmd.exe`,
+  `sh`, `go`), not the program's; and on Windows a stop can take until the
+  30-second kill when `cmd.exe` holds on to a batch file. For a server, point
+  `command[]` at the program itself (`service.exe`, `node.exe server.js`).
+- `script` and `command[]` cannot both be set; the menu says which line to fix.
 
 Section `[instance_env]`: extra environment variables for each instance.
 `{n}` is the instance number, `{host}` the server's name in lowercase,
@@ -174,9 +202,13 @@ enough that the menu fits in 120 columns.
 Two processes that talk only through files in `run\`:
 
 - `supervisor.php` owns the instances. It starts each with `proc_open` (no
-  shell, so the PID is the real `php.exe`), in its own process group, with
+  shell, so the PID is the real program), in its own process group, with
   output appended to one log file per run. Stop, restart and scale-down send
-  CTRL_BREAK to the instance's group, and kill it after 30 seconds. Only one
+  CTRL_BREAK (Windows) or SIGTERM (Linux) to the instance's group, and kill
+  the whole tree after 30 seconds (`taskkill /T`, or the process group). On
+  Linux an instance lasts until its whole group has exited, so a wrapper that
+  dies first (`sh`, `go run`) does not let a second copy start while its
+  program is still stopping. Only one
   supervisor runs, held by a lock on `run\supervisor.lock` that the OS releases
   when the process dies.
 - `manager.php` is the menu. It never owns an instance: it reads

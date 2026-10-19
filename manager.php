@@ -784,10 +784,33 @@ function show_log(): void
     set_title();
 }
 
+function on_path(string $program): bool
+{
+    exec(procdeck_is_windows()
+        ? 'where /Q ' . escapeshellarg($program)
+        : 'command -v ' . escapeshellarg($program) . ' > /dev/null 2>&1', $out, $code);
+
+    return $code === 0;
+}
+
 $config = procdeck_config();
 set_title();
-if (!is_file($config['script'])) {
-    echo RED . t('script_not_found', ['script' => $config['script'], 'ini' => realpath(PROCDECK_INI) ?: PROCDECK_INI]) . RESET . "\n";
+$ini = procdeck_ini();
+$vars = ['ini' => realpath(PROCDECK_INI) ?: PROCDECK_INI, 'script' => $config['script'], 'workdir' => $config['workdir'], 'program' => $config['command'][0] ?? ''];
+$hasCommand = isset($ini['command']);
+$error = match (true) {
+    $hasCommand && (!is_array($ini['command']) || trim((string) reset($ini['command'])) === '') => t('config_command_lines', $vars),
+    $hasCommand && trim((string) ($ini['script'] ?? '')) !== '' => t('config_both', $vars),
+    $hasCommand && trim((string) ($ini['workdir'] ?? '')) === '' => t('config_workdir_required', $vars),
+    !$hasCommand && !is_file($config['script']) => t('script_not_found', $vars),
+    !is_dir($config['workdir']) => t('workdir_not_found', $vars),
+    $hasCommand && preg_match('~[\\\\/]~', $vars['program']) && !is_file($vars['program']) => t('command_not_found', $vars),
+    // A bare name (go, cmd.exe) is looked up on the PATH, as starting it will.
+    $hasCommand && !preg_match('~[\\\\/]~', $vars['program']) && !on_path($vars['program']) => t('command_not_found', $vars),
+    default => null,
+};
+if ($error !== null) {
+    echo RED . $error . RESET . "\n";
     pause();
     exit(1);
 }

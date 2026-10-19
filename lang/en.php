@@ -91,6 +91,11 @@ return [
     'exit_message_down' => 'Exiting. The supervisor is not running, so no instances are running.',
     'exit_message_died' => 'Exiting. The supervisor died unexpectedly: its old instances are still running unwatched. Open the menu again: they are stopped first.',
     'script_not_found' => "Script not found: {script}\nCheck 'script' in {ini}",
+    'command_not_found' => "Program not found: {program}\nCheck the first 'command[]' line in {ini}",
+    'workdir_not_found' => "Folder not found: {workdir}\nCheck 'workdir' in {ini}",
+    'config_command_lines' => "Write the command as 'command[] = ...' lines, one per argument, in {ini}",
+    'config_both' => "Set either 'script' or 'command[]' in {ini}, not both",
+    'config_workdir_required' => "'command[]' needs 'workdir' in {ini}",
 
     // Instance table ([7]).
     'all_heading' => 'All instances',
@@ -118,7 +123,7 @@ return [
 
     // Supervisor window and run/logs/supervisor.log.
     'sup_already_running' => 'The supervisor is already running.',
-    'sup_started' => 'Supervisor started (pid {pid}), environment: {environment}, script: {script}, instances: {count}',
+    'sup_started' => 'Supervisor started (pid {pid}), environment: {environment}, command: {command}, instances: {count}',
     'sup_stopped' => 'Supervisor stopped',
     'sup_ctrl_event' => 'Ctrl event {event} received, stopping all instances',
     'sup_shutdown_requested' => 'Shutdown requested from the menu, stopping all instances',

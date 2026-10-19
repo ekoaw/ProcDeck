@@ -50,8 +50,8 @@ function procdeck_path(string $path): string
 /**
  * procdeck.ini; see README.md for each key. `php` is read by procdeck.bat.
  *
- * @return array{script: string, workdir: string, name: string, environment: string,
- *     log_max_total_mb: int, instance_env: array<string, string>}
+ * @return array{script: string, command: list<string>, workdir: string, name: string,
+ *     environment: string, log_max_total_mb: int, instance_env: array<string, string>}
  */
 function procdeck_config(): array
 {
@@ -59,11 +59,19 @@ function procdeck_config(): array
     $script = trim((string) ($ini['script'] ?? ''));
     $script = $script === '' ? '' : procdeck_path($script);
     $workdir = trim((string) ($ini['workdir'] ?? ''));
+    $workdir = $workdir !== '' ? procdeck_path($workdir) : ($script !== '' ? dirname($script) : __DIR__);
+    $command = is_array($ini['command'] ?? null) ? array_values(array_map('strval', $ini['command'])) : [];
+    if ($command !== [] && preg_match('~[\\\\/]~', $command[0]) && !preg_match('~^([a-zA-Z]:)?[\\\\/]~', $command[0])) {
+        // Relative to workdir, like every relative path the program itself is given.
+        $command[0] = realpath($workdir . '/' . $command[0]) ?: $workdir . '/' . $command[0];
+    }
     $instanceEnv = $ini['instance_env'] ?? [];
 
     return [
         'script' => $script,
-        'workdir' => $workdir !== '' ? procdeck_path($workdir) : ($script !== '' ? dirname($script) : __DIR__),
+        // What runs: command[] as written, else the script with this PHP.
+        'command' => $command !== [] ? $command : ($script !== '' ? [PHP_BINARY, $script] : []),
+        'workdir' => $workdir,
         'name' => trim((string) ($ini['name'] ?? '')) ?: 'ProcDeck',
         'environment' => strtolower(trim((string) ($ini['environment'] ?? ''))),
         'log_max_total_mb' => max(1, (int) ($ini['log_max_total_mb'] ?? 20)),

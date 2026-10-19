@@ -31,6 +31,8 @@ if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
 }
 
 $config = procdeck_config();
+// Without setsid (rare), instances share the supervisor's group and a stop reaches the PID only.
+$setsid = procdeck_is_windows() ? null : (trim((string) shell_exec('command -v setsid 2>/dev/null')) ?: null);
 $desired = (int) (procdeck_read_json(PROCDECK_DESIRED_FILE)['count'] ?? 0);
 if (procdeck_is_windows()) {
     @cli_set_process_title(t('supervisor_window', ['env' => procdeck_environment_tag()]));
@@ -79,10 +81,15 @@ function say(string $message): void
  * procdeck.ini, its {n}, {host} and {environment} filled in, and output to a new
  * log file for this run.
  *
- * @param array{script: string, workdir: string, environment: string, instance_env: array<string, string>} $config
+ * Each instance gets its own process group, so a stop reaches the instance and
+ * whatever it started (a .bat or .sh and its program, `go run` and its binary):
+ * create_process_group on Windows, setsid on Linux. setsid runs the command in
+ * place, so the PID is still the command's own.
+ *
+ * @param array{command: list<string>, workdir: string, environment: string, instance_env: array<string, string>} $config
  * @return array{resource, string}|null the process and its log file name
  */
-function spawn(int $id, array $config): ?array
+function spawn(int $id, array $config, ?string $setsid): ?array
 {
     $log = date('Ymd-His') . "-instance-{$id}.log";
     $out = fopen(PROCDECK_LOG_DIR . '/' . $log, 'a');
@@ -95,12 +102,11 @@ function spawn(int $id, array $config): ?array
         $env[$name] = strtr($template, $vars);
     }
     $proc = @proc_open(
-        [PHP_BINARY, $config['script']],
+        $setsid !== null ? [$setsid, ...$config['command']] : $config['command'],
         [0 => ['file', procdeck_is_windows() ? 'NUL' : '/dev/null', 'r'], 1 => $out, 2 => $out],
         $pipes,
         $config['workdir'],
         $env + getenv(),
-        // Its own process group, so CTRL_BREAK reaches this instance only.
         ['create_process_group' => true],
     );
     fclose($out);
@@ -145,7 +151,7 @@ function command_lines(array $pids): array
  * service, so a PID Windows has since given to another process is left alone.
  * Forcefully, as a new supervisor in another console cannot send them CTRL_BREAK.
  */
-function stop_leftovers(string $script): void
+function stop_leftovers(array $command): void
 {
     $previous = procdeck_read_json(PROCDECK_STATE_FILE);
     if ($previous === null || ($previous['stopped'] ?? true) !== false) {
@@ -160,18 +166,39 @@ function stop_leftovers(string $script): void
     if ($pids === []) {
         return;
     }
-    $normalize = static fn (string $path): string => strtolower(str_replace('\\', '/', $path));
+    $normalize = static fn (string $text): string => strtolower(str_replace('\\', '/', $text));
+    // Ours only when the command line has every argument of the command.
     $ours = array_filter(
         command_lines(array_keys($pids)),
-        static fn (string $command): bool => str_contains($normalize($command), $normalize($script))
+        static fn (string $line): bool => array_filter(
+            $command,
+            static fn (string $arg): bool => !str_contains($normalize($line), $normalize($arg))
+        ) === []
     );
     foreach (array_keys($ours) as $pid) {
-        if (procdeck_is_windows()) {
-            exec("taskkill /F /PID {$pid} 2>NUL");
-        } else {
-            exec("kill -9 {$pid} 2>/dev/null");
-        }
+        kill_tree($pid);
         say(t('sup_leftover_killed', ['id' => $pids[$pid], 'pid' => $pid]));
+    }
+}
+
+/** True while a process of the group led by $pid (setsid at spawn) is still running. */
+function group_alive(int $pid): bool
+{
+    exec("kill -0 -- -{$pid} 2>/dev/null", $out, $code);
+
+    return $code === 0;
+}
+
+/**
+ * Kills $pid and every process it started: taskkill /T on Windows, the
+ * process group on Linux (or the PID alone when it has no group of its own).
+ */
+function kill_tree(int $pid): void
+{
+    if (procdeck_is_windows()) {
+        exec("taskkill /T /F /PID {$pid} 2>NUL");
+    } else {
+        exec("kill -KILL -- -{$pid} 2>/dev/null || kill -KILL {$pid} 2>/dev/null");
     }
 }
 
@@ -224,14 +251,14 @@ function request_stop(array &$inst): void
     if (procdeck_is_windows()) {
         @sapi_windows_generate_ctrl_event(PHP_WINDOWS_EVENT_CTRL_BREAK, $inst['pid']);
     } else {
-        proc_terminate($inst['proc'], 15);
+        exec("kill -TERM -- -{$inst['pid']} 2>/dev/null || kill -TERM {$inst['pid']} 2>/dev/null");
     }
 }
 
 function new_instance(): array
 {
     return [
-        'proc' => null, 'pid' => 0, 'started' => 0.0, 'restarts' => 0, 'streak' => 0, 'last_exit' => null,
+        'proc' => null, 'pid' => 0, 'started' => 0.0, 'restarts' => 0, 'streak' => 0, 'last_exit' => null, 'exit' => null,
         'next_start' => 0.0, 'backoff' => 1, 'stopping_since' => null, 'restart_after_stop' => false,
         'log' => null,
     ];
@@ -325,9 +352,9 @@ function write_state(array $instances, int $desired, array $logUsage, int $logMa
 
 say(t('sup_started', [
     'pid' => getmypid(), 'environment' => $config['environment'] !== '' ? $config['environment'] : '-',
-    'script' => $config['script'], 'count' => $desired,
+    'command' => implode(' ', $config['command']), 'count' => $desired,
 ]));
-stop_leftovers($config['script']);
+stop_leftovers($config['command']);
 
 while (true) {
     // One failing pass is logged and the next one tried: an exception must not end
@@ -347,12 +374,18 @@ while (true) {
         foreach ($instances as $id => &$inst) {
             if ($inst['proc'] !== null) {
                 $status = proc_get_status($inst['proc']);
-                if ($status['running']) {
+                // PHP 8.2 reports the exit code only on the first call after the exit.
+                if (!$status['running'] && $inst['exit'] === null) {
+                    $inst['exit'] = $status['exitcode'];
+                }
+                // On Linux a wrapper (sh, go run) can exit on SIGTERM before the program it
+                // started: the instance lasts while its process group does.
+                if ($status['running'] || ($setsid !== null && group_alive($inst['pid']))) {
                     if ($id > $desired && $inst['stopping_since'] === null) {
                         request_stop($inst);
                     } elseif ($inst['stopping_since'] !== null && $now - $inst['stopping_since'] > STOP_TIMEOUT_S) {
                         say(t('sup_stop_timeout', ['id' => $id, 'seconds' => STOP_TIMEOUT_S]));
-                        proc_terminate($inst['proc'], 9);
+                        kill_tree($inst['pid']);
                     } elseif ($inst['streak'] > 0 && $inst['stopping_since'] === null && $now - $inst['started'] >= HEALTHY_AFTER_S) {
                         if ($inst['streak'] >= PROCDECK_CRASH_LOOP_AFTER) {
                             say(t('sup_recovered', ['id' => $id]));
@@ -362,7 +395,7 @@ while (true) {
                     continue;
                 }
 
-                $inst['last_exit'] = $status['exitcode'];
+                $inst['last_exit'] = $inst['exit'];
                 proc_close($inst['proc']);
                 $inst['proc'] = null;
                 if ($inst['stopping_since'] !== null) {
@@ -392,7 +425,7 @@ while (true) {
                 continue;
             }
             if ($now >= $inst['next_start']) {
-                $started = spawn($id, $config);
+                $started = spawn($id, $config, $setsid);
                 if ($started === null) {
                     $inst['backoff'] = min(BACKOFF_MAX_S, $inst['backoff'] * 2);
                     $inst['next_start'] = $now + $inst['backoff'];
@@ -401,6 +434,7 @@ while (true) {
                 }
                 [$inst['proc'], $inst['log']] = $started;
                 $inst['pid'] = proc_get_status($inst['proc'])['pid'];
+                $inst['exit'] = null;
                 $inst['started'] = $now;
                 say(t('sup_running', ['id' => $id, 'pid' => $inst['pid'], 'log' => $inst['log']]));
             }
