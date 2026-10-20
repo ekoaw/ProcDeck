@@ -1,2 +1,7 @@
 run/
 .test/
+
+# Go builds
+/go/procdeck
+/go/procdeck.exe
+/go/.procdeck.new
