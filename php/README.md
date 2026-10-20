@@ -1,4 +1,4 @@
-# ProcDeck
+# ProcDeck (PHP)
 
 Runs N copies of one program on a Windows server, restarts the ones that
 exit, and changes how many run, without opening a cmd window per copy. The
@@ -244,4 +244,4 @@ Windows constraints behind the design:
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](../LICENSE).
